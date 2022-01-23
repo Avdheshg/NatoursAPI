@@ -4,24 +4,64 @@ const fs = require("fs");
 // express is a function
 const express = require("express");
 
+// requiring "morgan" => 3rd party middleware
+const morgan = require('morgan');
+
 // here "express()" function is called and it will make all it's function available to "app" var
 const app = express();
 
+
+// *************** 1) MIDDLEWARES  ***************   ***************
+// ***************   ***************   ***************   ***************
+
+// using morgan => this will return the details about the req made 
+app.use(morgan('dev'));
+
 // Middleware => it is just a function which can modify the incoming req data
 // it's ka middleware bcoz it stands bt req and response
-// here "express.json()" is middleware
+// here "express.json()" is middleware. Here this statement will return a function which will be added to middleware stack
+// "use()" is the function which V use for using the middleware
 app.use(express.json());
+
+
+// Creating our own middleware function MW = A
+app.use((req, res, next) => {
+    console.log('Hello from the middleware');
+    next();
+    // It's mandatory to call next() in each middleware o/w "req and res cycle" will stop and will not able to send the response to the client
+});
+// this MW will be callled for every call/req bcoz V haven't specify any route here
+
+// defining a new MW => V R manupulating the "req" object. V want to add the current time at which the req is made
+// suppose V wants to find when a certain req is made => so V will use this MW. V will use this in the getAllTours()
+app.use((req, res, next) => {
+    req.requestTime = new Date().toISOString();
+    console.log();
+    next();
+});
+// "toISOString()" will Returns a date as a string value in ISO format. More readable date  
+
+
+// *************** 2) ROUTE HANDLERS  ***************   ***************
+// ***************   ***************   ***************   ***************
 
 // Defining a function for route handler
 const getAllTours = (req, res) => {
+
+    // V wants to find at which time this req was made
+    console.log("getAllTours() req is made at: " + req.requestTime);
+
+    // after sending the "res.json/send" V complete/end the req, res cycle
     res.status(200).json({
         status: 'success',
+        requestedAt: req.requestTime, 
         results: tours.length, 
         data: {
             tours
         }
     });
 };
+// "requestedAt: req.requestTime" => if V wants to send the req time to the res also
 
 const getTour = (req, res) => {
     const id = req.params.id * 1; 
@@ -236,6 +276,42 @@ const deleteTour = (req, res) => {
     });
 }
 
+const getAllUsers = (req, res) => {
+    res.status(500).json({
+        status: 'error',
+        message: 'This route is not yet defined'
+    })
+};
+// 500: internal server error
+
+const getUser = (req, res) => {
+    res.status(500).json({
+        status: 'error',
+        message: 'This route is not yet defined'
+    })
+};
+
+const createUser = (req, res) => {
+    res.status(500).json({
+        status: 'error',
+        message: 'This route is not yet defined'
+    })
+};
+
+const updateUser = (req, res) => {
+    res.status(500).json({
+        status: 'error',
+        message: 'This route is not yet defined'
+    })
+};
+
+const deleteUser = (req, res) => {
+    res.status(500).json({
+        status: 'error',
+        message: 'This route is not yet defined'
+    })
+};
+
 // app.delete('/api/v1/tours/:id', (req, res) => {
 //     if (req.params.id * 1 > tours.length) {
 //         return res.json({
@@ -266,6 +342,9 @@ const deleteTour = (req, res) => {
 // app.delete('/api/v1/tours/:id', deleteTour);
 
 // M-3: A more better version of above code
+
+// *************** 3) ROUTES  ***************   ***************
+// ***************   ***************   ***************   ***************
 app
     .route('/api/v1/tours')
     .get(getAllTours)
@@ -273,13 +352,35 @@ app
 
 // both of above (get amd post) will work on the same route "/api/v1/tours"
 
+// If V use our own MW here then it will not execute Bcoz the req, res cycle has been completed by above route call i.e "/api/v1/tours"
+// Creating our own middleware function MW = B. MW = A will run but this will not bcoz it occurs before all res.send/json
+app.use((req, res, next) => {
+    console.log('Hello from the SECOND middleware');
+    next();
+});
+// If V run the below route req i.e "/api/v1/tours/:id" then this MW will run
+
+
 app
     .route('/api/v1/tours/:id')
     .get(getTour)
     .patch(updateTour)
     .delete(deleteTour);
     
+// Defining the route for users
+app
+    .route('/api/v1/users')
+    .get(getAllUsers)
+    .post(createUser);
 
+app
+    .route('/api/v1/users/:id')
+    .get(getUser)
+    .patch(updateUser)
+    .delete(deleteUser);   
+
+// *************** 4) START SERVER  ***************   ***************
+// ***************   ***************   ***************   ***************
 const port = 3000;
 app.listen(port, () => {
     console.log(`App is running on port ${port}`);
