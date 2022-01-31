@@ -1,5 +1,6 @@
 node_modules/
 public/
+Till mongodb/
 dev-data/img
 .prettierrc
 
